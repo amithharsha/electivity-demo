@@ -830,7 +830,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px;font-we
   .print-foot{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:16px;padding-top:12px;border-top:1px solid #ccc;font-size:9pt;color:#333;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .print-foot .cent-mark{filter:none}
 }
-.bottom{bottom:34px!important}body{padding-bottom:34px}</style>
+.bottom{bottom:34px!important}body{padding-bottom:34px}@media (max-width:640px){.bottom{bottom:54px!important}body{padding-bottom:54px}}</style>
 </head>
 <body>
 
@@ -931,7 +931,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px;font-we
   </div>
   <button class="landing-tour" onclick="startTour()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-    New here? <b>Take the guided tour</b>
+    New here? <b>Watch the 90-second demo</b>
   </button>
   <div class="landing-footer">
     <div class="lf-prep"><span class="lf-by">Prepared for</span><span class="lf-school-pill"><span class="school-mark" role="img" aria-label="Your School"></span></span></div><a class="lf-powered" href="https://99thcentile.com/electivity?utm_source=electivity&utm_medium=planner&utm_campaign=demo" target="_blank" rel="noopener"><span class="lf-by">Powered by</span><span class="cent-mark cent-lg-dark cent-on-dark"></span></a>
@@ -3473,6 +3473,189 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');try{return t.replace(new RegExp('('+qe+')','ig'),'<mark class="hl">$1</mark>');}catch(e){return t;}}
 
 </script>
-<div id="demo-ribbon" style="position:fixed;left:0;right:0;bottom:0;z-index:9000;background:#162848;color:#fff;font:500 13px/1.4 var(--display,system-ui);text-align:center;padding:8px 12px;box-shadow:0 -2px 10px rgba(0,0,0,.25)">Demo with a fictional catalog. <a href="#" onclick="startTour();return false" style="color:#9fd0ff;font-weight:700">Replay the guided tour</a> &middot; <a href="https://99thcentile.com/electivity?utm_source=electivity&amp;utm_medium=demo&amp;utm_campaign=demo" target="_blank" rel="noopener" style="color:#9fd0ff;font-weight:700">Get one for your school</a></div><script>window.addEventListener('load',function(){try{if(sessionStorage.getItem('el-demo-tour'))return;sessionStorage.setItem('el-demo-tour','1');}catch(e){}setTimeout(function(){startTour();},600);});</script>
+<div id="demo-ribbon" style="position:fixed;left:0;right:0;bottom:0;z-index:9000;background:#162848;color:#fff;font:500 13px/1.4 var(--display,system-ui);text-align:center;padding:8px 12px;box-shadow:0 -2px 10px rgba(0,0,0,.25)">Demo with a fictional catalog. <a href="#" onclick="startDemo();return false" style="color:#9fd0ff;font-weight:700">Replay the demo</a> &middot; <a href="https://99thcentile.com/electivity?utm_source=electivity&amp;utm_medium=demo&amp;utm_campaign=demo" target="_blank" rel="noopener" style="color:#9fd0ff;font-weight:700">Get one for your school</a></div><script>window.addEventListener('load',function(){try{if(sessionStorage.getItem('el-demo-tour'))return;sessionStorage.setItem('el-demo-tour','1');}catch(e){}setTimeout(function(){startDemo();},700);});</script>
+<script>
+/* Electivity demo mode: an auto-playing walkthrough that drives the real planner.
+   Each step resets to a clean state, replays the earlier steps silently, then performs its own
+   action, so Back and Next always land on a consistent screen. Injected by build_demo.py. */
+(function(){
+  var STEP_MS = 6500;
+  function cid(sec){ var c = COURSES.find(function(x){ return x.section === sec; }); return c ? c.id : ''; }
+  function q(s){ return document.querySelector(s); }
+  function cardEl(sec){ return document.getElementById('crd-' + cid(sec)); }
+  function clickCard(sec){ var el = cardEl(sec); if(!el) return; if(S.sel.indexOf(cid(sec)) >= 0) return; (el.querySelector('.crd-top') || el).click(); }
+  function setSearch(v){ var s = q('#srch'); if(s){ s.value = v; } S.q = v; if(typeof toggleSearchClear === 'function') toggleSearchClear(); applyF(); }
+  function pill(type, v){ var b = q('[data-ftype="' + type + '"][data-v="' + v + '"]'); if(b && !b.classList.contains('on')) togglePill(b); }
+  function opt(sel){ var b = q(sel); if(b) b.click(); }
+
+  function reset(){
+    S.sel = []; S.exp = null; S.prereqOK = {}; S.avail = null; S.section = null; S.q = '';
+    var s = q('#srch'); if(s) s.value = '';
+    if(typeof clearF === 'function') clearF();
+    showScreen('screen-landing');
+  }
+  function toApp(){
+    if(!S.avail){ S.avail = 'all'; }
+    if(!S.section){ S.section = 2; }
+    launchApp(); showTab('courses');
+  }
+
+  var STEPS = [
+    { t: 'Pick the formats that fit your life',
+      x: 'Students start by saying how they can take classes: evenings, weekends, hybrid or all formats. The catalog then shows only what fits.',
+      run: function(){ startFresh(); opt('#avail-opts .opt[data-v="all"]'); }, spot: '#avail-opts' },
+    { t: 'Choose your core section',
+      x: 'When required courses run in more than one section, students pick theirs once and every date in the planner follows.',
+      run: function(){ startFresh(); opt('#avail-opts .opt[data-v="all"]'); opt('#section-opts .opt[data-sec="2"]'); }, spot: '#section-opts' },
+    { t: 'Required courses are already in',
+      x: 'Courses the school enrolls everyone in appear at the top, already counted. Nothing to look up.',
+      run: function(){ toApp(); }, spot: '#course-list .crd.mand' },
+    { t: 'Search the catalog',
+      x: 'Type a title, professor, area or course number. Here: "AI".',
+      run: function(){ toApp(); setSearch('AI'); }, spot: '#course-list .crd:not(.mand)' },
+    { t: 'Filter to what you need',
+      x: 'Narrow by area, format, term or block. Here: Finance courses in Term 1.',
+      run: function(){ toApp(); setSearch(''); pill('area', 'Finance'); pill('term', 'Term 1'); }, spot: '.pill-row' },
+    { t: 'Add a course',
+      x: 'One tap adds it to the plan. Credits update instantly in the sidebar.',
+      run: function(){ toApp(); clickCard('BUSN 612-1'); }, spot: function(){ return cardEl('BUSN 612-1'); } },
+    { t: 'Conflicts are flagged before they happen',
+      x: 'Adding a second Monday-evening class flags both. Students see the clash in the planner, not at registration.',
+      run: function(){ toApp(); clickCard('BUSN 612-1'); clickCard('BUSN 675-1'); }, spot: function(){ return cardEl('BUSN 675-1'); } },
+    { t: 'Prerequisites are checked',
+      x: 'Pricing Strategy needs Customer Analytics, which this student has not taken. The planner says so on the card.',
+      run: function(){ toApp(); clickCard('BUSN 612-1'); clickCard('BUSN 675-1'); var c = cardEl('BUSN 695-1'); if(c) c.scrollIntoView({block:'center'}); },
+      spot: function(){ var c = cardEl('BUSN 695-1'); return c && (c.querySelector('.exp-prereq, [class*="prereq"]') || c); } },
+    { t: 'Choose-one requirements',
+      x: 'This program asks for one course from a short list. Pick one and the requirement is marked done.',
+      run: function(){ toApp(); clickCard('BUSN 612-1'); clickCard('BUSN 675-1'); clickCard('BUSN 541-1'); }, spot: function(){ return cardEl('BUSN 541-1'); } },
+    { t: 'Required lab',
+      x: 'One 3-credit lab is required. Add the Client Consulting Lab and it counts toward the lab, not the electives.',
+      run: function(){ toApp(); clickCard('BUSN 612-1'); clickCard('BUSN 675-1'); clickCard('BUSN 541-1'); clickCard('BUSN 790-1'); }, spot: function(){ return cardEl('BUSN 790-1'); } },
+    { t: 'Credits against the program rules',
+      x: 'Electives, core and lab are tracked against what the program requires, with a note when full-time status is at stake.',
+      run: function(){ STEPS[9].run(); window.scrollTo(0, 0); }, spot: '.side' },
+    { t: 'Everything on a calendar',
+      x: 'Every class session laid out by date. The Monday clash shows in red. One click exports it all to a phone or Outlook calendar.',
+      run: function(){ STEPS[9].run(); showTab('calendar'); }, spot: '#pnl-calendar .cal-toolbar' },
+    { t: 'Program rules and history',
+      x: 'What the degree requires, and the courses this student already finished in year one.',
+      run: function(){ STEPS[9].run(); showTab('rules'); }, spot: '#rules-body > *' },
+    { t: 'The whole plan on one page',
+      x: 'A clean summary to review with an advisor before registration.',
+      run: function(){ STEPS[9].run(); showTab('plan'); }, spot: '#plan-body > *' },
+    { t: 'Registration in one click',
+      x: 'Copy every course number at once when registration opens, and save the plan to pick up later.',
+      run: function(){ STEPS[9].run(); showTab('courses'); }, spot: '#bb-copy-btn' }
+  ];
+
+  var i = 0, playing = true, timer = null, bar = null;
+
+  function ui(){
+    if(document.getElementById('dm')) return;
+    var css = '#dm{position:fixed;left:20px;bottom:96px;z-index:9500;width:380px;max-width:calc(100vw - 32px);background:#fff;color:#162848;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.35);font-family:var(--display,system-ui);overflow:hidden}'
+      + '#dm .dm-b{padding:14px 16px 10px}#dm .dm-n{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#6b7a90;font-weight:700}'
+      + '#dm .dm-t{font-size:17px;font-weight:700;margin:4px 0 6px}#dm .dm-x{font-size:13.5px;line-height:1.45;color:#33405a}'
+      + '#dm .dm-c{display:flex;gap:6px;align-items:center;padding:8px 12px 12px}#dm button{font:600 12.5px var(--display,system-ui);border:1px solid #d5dbe5;background:#fff;color:#162848;border-radius:7px;padding:6px 11px;cursor:pointer}'
+      + '#dm button.pri{background:#162848;color:#fff;border-color:#162848}#dm .dm-close{margin-left:auto;border:0;background:none;color:#6b7a90}'
+      + '#dm .dm-p{height:3px;background:#e7ebf1}#dm .dm-p i{display:block;height:100%;width:0;background:#7cc242}'
+      + '#dm-spot{position:fixed;z-index:9400;pointer-events:none;border:3px solid #7cc242;border-radius:12px;box-shadow:0 0 0 4px rgba(124,194,66,.25),0 0 24px rgba(124,194,66,.45);transition:all .35s ease}'
+      + '#dm.dm-br{left:auto;right:20px}#dm.dm-tr{left:auto;right:20px;bottom:auto;top:150px}'
+      + '@media (max-width:640px){#dm{left:12px;right:12px;width:auto;bottom:112px}#dm .dm-b{padding:10px 12px 6px}#dm .dm-t{font-size:15px;margin:2px 0 4px}#dm .dm-x{font-size:12.5px}#dm .dm-c{padding:6px 10px 10px}}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+    var d = document.createElement('div'); d.id = 'dm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-live', 'polite');
+    d.innerHTML = '<div class="dm-p"><i></i></div><div class="dm-b"><div class="dm-n"></div><div class="dm-t"></div><div class="dm-x"></div></div>'
+      + '<div class="dm-c"><button data-a="back">Back</button><button class="pri" data-a="play">Pause</button><button data-a="next">Next</button>'
+      + '<button class="dm-close" data-a="end" aria-label="End demo">End demo &times;</button></div>';
+    document.body.appendChild(d);
+    var s = document.createElement('div'); s.id = 'dm-spot'; document.body.appendChild(s);
+    bar = d.querySelector('.dm-p i');
+    d.addEventListener('click', function(e){
+      var a = e.target.closest('[data-a]'); if(!a) return;
+      var act = a.getAttribute('data-a');
+      if(act === 'back') go(i - 1, true); else if(act === 'next') go(i + 1, true);
+      else if(act === 'play') toggle(); else if(act === 'end') end();
+    });
+    document.addEventListener('keydown', function(e){
+      if(!document.getElementById('dm') || document.getElementById('dm').style.display === 'none') return;
+      if(e.key === 'Escape') end(); else if(e.key === 'ArrowRight') go(i + 1, true); else if(e.key === 'ArrowLeft') go(i - 1, true);
+      else if(e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+  }
+
+  function target(){ var sp = STEPS[i].spot; return typeof sp === 'function' ? sp() : q(sp); }
+  function place(){
+    var s = document.getElementById('dm-spot'); if(!s) return;
+    var dmv = document.getElementById('dm'); if(!dmv || dmv.style.display === 'none'){ s.style.display = 'none'; return; }
+    var t = target(); if(!t){ s.style.display = 'none'; return; }
+    var r = t.getBoundingClientRect(), p = 6;
+    s.style.display = 'block'; s.style.left = (r.left - p) + 'px'; s.style.top = (r.top - p) + 'px';
+    var top = Math.max(r.top, 0), bot = Math.min(r.bottom, window.innerHeight - 120);
+    s.style.top = (top - p) + 'px';
+    s.style.width = (r.width + 2 * p) + 'px'; s.style.height = (Math.max(bot - top, 30) + 2 * p) + 'px';
+    dodge({left: r.left - p, right: r.right + p, top: top - p, bottom: bot + p});
+  }
+  // Keep the caption off the highlighted element: bottom-left, else bottom-right, else top-right.
+  function dodge(box){
+    var d = document.getElementById('dm'); if(!d || window.innerWidth < 640) return;
+    var spots = ['dm-bl', 'dm-br', 'dm-tr'];
+    for(var k = 0; k < spots.length; k++){
+      d.classList.remove('dm-bl', 'dm-br', 'dm-tr'); d.classList.add(spots[k]);
+      var c = d.getBoundingClientRect();
+      if(c.right < box.left || c.left > box.right || c.bottom < box.top || c.top > box.bottom) return;
+    }
+    d.classList.remove('dm-tr'); d.classList.add('dm-bl');
+  }
+  function show(){
+    var d = document.getElementById('dm'); d.style.display = 'block';
+    d.querySelector('.dm-n').textContent = 'Demo · step ' + (i + 1) + ' of ' + STEPS.length;
+    d.querySelector('.dm-t').textContent = STEPS[i].t;
+    d.querySelector('.dm-x').textContent = STEPS[i].x;
+    d.querySelector('[data-a="back"]').disabled = (i === 0);
+    d.querySelector('[data-a="next"]').textContent = (i === STEPS.length - 1) ? 'Finish' : 'Next';
+    var t = target();
+    if(t && STEPS[i].spot !== '#bb-copy-btn' && STEPS[i].spot !== '.side'){
+      var h = t.getBoundingClientRect().height;
+      if(h > window.innerHeight * 0.5){ window.scrollTo({top: Math.max(0, t.getBoundingClientRect().top + window.pageYOffset - 150), behavior: 'smooth'}); }
+      else { t.scrollIntoView({block: 'center', behavior: 'smooth'}); }
+    }
+    setTimeout(place, 380); setTimeout(place, 900);
+    tick();
+  }
+  function tick(){
+    clearTimeout(timer);
+    if(!bar) return;
+    bar.style.transition = 'none'; bar.style.width = '0';
+    if(!playing) return;
+    void bar.offsetWidth;
+    bar.style.transition = 'width ' + STEP_MS + 'ms linear'; bar.style.width = '100%';
+    timer = setTimeout(function(){ go(i + 1, false); }, STEP_MS);
+  }
+  function go(n, manual){
+    if(n < 0) n = 0;
+    if(n >= STEPS.length){ end(); return; }
+    i = n; reset();
+    try { STEPS[i].run(); } catch(e) { if(window.console) console.warn('demo step', i + 1, e); }
+    show();
+  }
+  function toggle(){
+    playing = !playing;
+    document.querySelector('#dm [data-a="play"]').textContent = playing ? 'Pause' : 'Play';
+    tick();
+  }
+  function end(){
+    clearTimeout(timer);
+    var d = document.getElementById('dm'); if(d) d.style.display = 'none';
+    var s = document.getElementById('dm-spot'); if(s) s.style.display = 'none';
+    reset(); S.avail = 'all'; S.section = 1; launchApp(); showTab('courses'); window.scrollTo(0, 0);
+    if(typeof showToast === 'function') showToast('Your turn: the planner is yours to try.');
+  }
+  window.startDemo = function(){ ui(); playing = true; document.querySelector('#dm [data-a="play"]').textContent = 'Pause'; go(0, false); };
+  window.startTour = window.startDemo;   // existing "tour" buttons now start the demo
+})();
+
+</script>
 </body>
 </html>
