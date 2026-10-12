@@ -3530,15 +3530,15 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
 
   function ui(){
     if(document.getElementById('dm')) return;
-    var css = '#dm{position:fixed;left:20px;bottom:96px;z-index:9500;width:380px;max-width:calc(100vw - 32px);background:#fff;color:#162848;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.35);font-family:var(--display,system-ui);overflow:hidden}'
-      + '#dm .dm-b{padding:14px 16px 10px}#dm .dm-n{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#6b7a90;font-weight:700}'
-      + '#dm .dm-t{font-size:17px;font-weight:700;margin:4px 0 6px}#dm .dm-x{font-size:13.5px;line-height:1.45;color:#33405a}'
-      + '#dm .dm-c{display:flex;gap:6px;align-items:center;padding:8px 12px 12px}#dm button{font:600 12.5px var(--display,system-ui);border:1px solid #d5dbe5;background:#fff;color:#162848;border-radius:7px;padding:6px 11px;cursor:pointer}'
-      + '#dm button.pri{background:#162848;color:#fff;border-color:#162848}#dm .dm-close{margin-left:auto;border:0;background:none;color:#6b7a90}'
-      + '#dm .dm-p{height:3px;background:#e7ebf1}#dm .dm-p i{display:block;height:100%;width:0;background:#7cc242}'
-      + '#dm-spot{position:fixed;z-index:9400;pointer-events:none;border:3px solid #7cc242;border-radius:12px;box-shadow:0 0 0 4px rgba(124,194,66,.25),0 0 24px rgba(124,194,66,.45);transition:all .2s ease}'
-      + '#dm.dm-br{left:auto;right:20px}#dm.dm-tr{left:auto;right:20px;bottom:auto;top:150px}'
-      + '@media (max-width:640px){#dm{left:12px;right:12px;width:auto;bottom:112px}#dm .dm-b{padding:10px 12px 6px}#dm .dm-t{font-size:15px;margin:2px 0 4px}#dm .dm-x{font-size:12.5px}#dm .dm-c{padding:6px 10px 10px}}';
+    var css = '#dm{position:fixed;left:20px;top:20px;z-index:9500;width:420px;max-width:calc(100vw - 24px);background:#fff;color:#162848;border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.45);font-family:var(--display,system-ui);overflow:hidden}'
+      + '#dm .dm-b{padding:16px 20px 10px}#dm .dm-n{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#5d7a2e;font-weight:700}'
+      + '#dm .dm-t{font-size:22px;line-height:1.2;font-weight:700;margin:6px 0 8px}#dm .dm-x{font-size:16.5px;line-height:1.45;color:#2c3a55}'
+      + '#dm .dm-c{display:flex;gap:8px;align-items:center;padding:6px 16px 16px}#dm button{font:600 13.5px var(--display,system-ui);border:1px solid #d5dbe5;background:#fff;color:#162848;border-radius:8px;padding:7px 13px;cursor:pointer}'
+      + '#dm button:disabled{opacity:.4;cursor:default}#dm button.pri{background:#162848;color:#fff;border-color:#162848}#dm .dm-close{margin-left:auto;border:0;background:none;color:#6b7a90}'
+      + '#dm .dm-p{height:4px;background:#e7ebf1}#dm .dm-p i{display:block;height:100%;width:0;background:#7cc242}'
+      + '#dm-block{position:fixed;inset:0;z-index:9300;background:transparent;cursor:default}'
+      + '#dm-spot{position:fixed;z-index:9400;pointer-events:none;border:3px solid #7cc242;border-radius:12px;box-shadow:0 0 0 9999px rgba(8,16,32,.55),0 0 26px rgba(124,194,66,.6);transition:all .2s ease}'
+      + '@media (max-width:640px){#dm{width:auto}#dm .dm-b{padding:12px 14px 6px}#dm .dm-t{font-size:18px}#dm .dm-x{font-size:15px}#dm .dm-c{padding:6px 12px 12px}}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     var d = document.createElement('div'); d.id = 'dm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-live', 'polite');
     d.innerHTML = '<div class="dm-p"><i></i></div><div class="dm-b"><div class="dm-n"></div><div class="dm-t"></div><div class="dm-x"></div></div>'
@@ -3546,6 +3546,13 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
       + '<button class="dm-close" data-a="end" aria-label="End demo">End demo &times;</button></div>';
     document.body.appendChild(d);
     var s = document.createElement('div'); s.id = 'dm-spot'; document.body.appendChild(s);
+    var blk = document.createElement('div'); blk.id = 'dm-block'; blk.title = 'Demo playing: use the controls in the caption'; document.body.appendChild(blk);
+    // While the demo runs, the page ignores the visitor: no clicks (blocker layer), no scrolling, no typing.
+    function on(){ var x = document.getElementById('dm'); return x && x.style.display !== 'none'; }
+    function inDm(e){ return e.target && e.target.closest && e.target.closest('#dm'); }
+    ['wheel', 'touchmove'].forEach(function(ev){
+      window.addEventListener(ev, function(e){ if(on() && !inDm(e)) e.preventDefault(); }, {passive: false, capture: true});
+    });
     bar = d.querySelector('.dm-p i');
     d.addEventListener('click', function(e){
       var a = e.target.closest('[data-a]'); if(!a) return;
@@ -3554,10 +3561,12 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
       else if(act === 'play') toggle(); else if(act === 'end') end();
     });
     document.addEventListener('keydown', function(e){
-      if(!document.getElementById('dm') || document.getElementById('dm').style.display === 'none') return;
+      if(!on()) return;
+      if(inDm(e) && (e.key === 'Enter' || e.key === 'Tab')) return;   // keyboard use of the caption buttons
+      e.preventDefault(); e.stopPropagation();
       if(e.key === 'Escape') end(); else if(e.key === 'ArrowRight') go(i + 1, true); else if(e.key === 'ArrowLeft') go(i - 1, true);
-      else if(e.key === ' '){ e.preventDefault(); toggle(); }
-    });
+      else if(e.key === ' ') toggle();
+    }, true);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
   }
@@ -3572,21 +3581,26 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
     var top = Math.max(r.top, 0), bot = Math.min(r.bottom, window.innerHeight - 120);
     s.style.top = (top - p) + 'px';
     s.style.width = (r.width + 2 * p) + 'px'; s.style.height = (Math.max(bot - top, 30) + 2 * p) + 'px';
-    dodge({left: r.left - p, right: r.right + p, top: top - p, bottom: bot + p});
+    near({left: r.left - p, right: r.right + p, top: top - p, bottom: bot + p});
   }
-  // Keep the caption off the highlighted element: bottom-left, else bottom-right, else top-right.
-  function dodge(box){
-    var d = document.getElementById('dm'); if(!d || window.innerWidth < 640) return;
-    var spots = ['dm-bl', 'dm-br', 'dm-tr'];
-    for(var k = 0; k < spots.length; k++){
-      d.classList.remove('dm-bl', 'dm-br', 'dm-tr'); d.classList.add(spots[k]);
-      var c = d.getBoundingClientRect();
-      if(c.right < box.left || c.left > box.right || c.bottom < box.top || c.top > box.bottom) return;
-    }
-    d.classList.remove('dm-tr'); d.classList.add('dm-bl');
+  // Put the caption right next to the highlight so the eye never leaves the feature:
+  // below it, else above, else to the right, else to the left; clamped to the screen.
+  function near(box){
+    var d = document.getElementById('dm'); if(!d) return;
+    var W = window.innerWidth, H = window.innerHeight, g = 14, m = 12;
+    var w = d.offsetWidth, h = d.offsetHeight, x, y;
+    var cx = function(v){ return Math.max(m, Math.min(v, W - w - m)); };
+    var cy = function(v){ return Math.max(m, Math.min(v, H - h - m)); };
+    if(box.bottom + g + h <= H - m){ x = cx(box.left); y = box.bottom + g; }
+    else if(box.top - g - h >= m){ x = cx(box.left); y = box.top - g - h; }
+    else if(box.right + g + w <= W - m){ x = box.right + g; y = cy(box.top); }
+    else if(box.left - g - w >= m){ x = box.left - g - w; y = cy(box.top); }
+    else { x = cx((W - w) / 2); y = H - h - m; }
+    d.style.left = x + 'px'; d.style.top = y + 'px';
   }
   function show(){
     var d = document.getElementById('dm'); d.style.display = 'block';
+    document.getElementById('dm-block').style.display = 'block';
     d.querySelector('.dm-n').textContent = 'Demo · step ' + (i + 1) + ' of ' + STEPS.length;
     d.querySelector('.dm-t').textContent = STEPS[i].t;
     d.querySelector('.dm-x').textContent = STEPS[i].x;
@@ -3596,7 +3610,7 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
     if(t && STEPS[i].spot !== '#bb-copy-btn'){
       var h = t.getBoundingClientRect().height;
       if(h > window.innerHeight * 0.5){ window.scrollTo({top: Math.max(0, t.getBoundingClientRect().top + window.pageYOffset - 150), behavior: 'auto'}); }
-      else { t.scrollIntoView({block: 'center', behavior: 'auto'}); }
+      else { var rr = t.getBoundingClientRect(); window.scrollTo({top: Math.max(0, rr.top + window.pageYOffset - Math.max(140, (window.innerHeight - rr.height - 260) / 2)), behavior: 'auto'}); }
     }
     place(); setTimeout(place, 120); setTimeout(place, 400);
     tick();
@@ -3626,6 +3640,7 @@ function hlText(s){var t=esc(s);var q=(S.q||'').trim();if(!q)return t;var qe=q.r
     clearTimeout(timer);
     var d = document.getElementById('dm'); if(d) d.style.display = 'none';
     var s = document.getElementById('dm-spot'); if(s) s.style.display = 'none';
+    var b = document.getElementById('dm-block'); if(b) b.style.display = 'none';
     reset(); window.scrollTo(0, 0);   // back to the start page: Start fresh to try it hands-on
     if(typeof showToast === 'function') showToast('Your turn: choose <b>Start fresh</b> to try it yourself.');
   }
